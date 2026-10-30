@@ -42,7 +42,7 @@ with mujoco.viewer.launch_passive(model, data) as viewer:
         viewer.sync()
         
         # 线程休眠0.01秒（10毫秒）
-        # 限制循环执行速度，使仿真运行频率与真实时间流逝大致匹配，没有的话意味着
+        # 限制循环执行速度，使仿真运行频率与真实时间流逝大致匹配，没有的话意味着小球会迅速落地，肉眼无法观察到下落过程
         time.sleep(0.01)
         
         # 读取并打印 data 对象中 qpos（位置状态）数组的索引2元素，即刚体的Z轴高度
