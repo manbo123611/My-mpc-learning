@@ -19,7 +19,6 @@ model = mujoco.MjModel.from_xml_string("""
   </actuator>
 </mujoco>
 """)
-
 # 初始化系统动态数据(MjData)
 # 该对象存储仿真过程中的所有实时状态变量（如位置、速度、加速度及控制输入）
 data = mujoco.MjData(model)
@@ -27,13 +26,10 @@ data = mujoco.MjData(model)
 # 启动被动可视化窗口，创建上下文管理器
 with mujoco.viewer.launch_passive(model, data) as viewer:
     # 仿真主循环：只要渲染窗口处于开启状态，则持续运行
-    # 你的球是 20kg，重力 = 20 * 9.81 = 196.2 N
-    # 给第0个电机赋值196.2N的力，尝试抵消重力
-    data.ctrl[0] = 196.2 
-
-    # 执行单步物理积分计算
-    mujoco.mj_step(model, data)
+    
     while viewer.is_running():
+        # 关键改动：把控制力放进循环里，每一帧都重新赋值
+        data.ctrl[0] = 196.2
         # 执行单步物理积分计算
         # 引擎根据当前状态与受力计算下一步的动力学结果，并更新到 data 对象中
         mujoco.mj_step(model, data)
@@ -46,4 +42,4 @@ with mujoco.viewer.launch_passive(model, data) as viewer:
         time.sleep(0.01)
         
         # 读取并打印 data 对象中 qpos（位置状态）数组的索引2元素，即刚体的Z轴高度
-        # print("当前高度：", data.qpos[2])
+        print("当前高度：", data.qpos[2])
