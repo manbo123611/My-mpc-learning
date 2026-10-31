@@ -3,7 +3,7 @@ import mujoco.viewer # 拉入一个窗口，用来观察仿真主体的运动情
 import time          # 引入时间概念，模拟现实时间
 
 # 以下为XML字符串用于构建仿真的物理模型(MjModel)
-# 下面的操作类似于造图纸，设置一系列不能被函数更改的参数，底层被设置为只读来避免参数被覆写，MjModel本质是提供一个图纸模板，from_xml_string是读入xml字符串内设置的参数并按照模板写成图纸，最后挂上model这个图纸号
+# 加载模型：类似于做图纸，MjModel本质是提供一个图纸模板，from_xml_string是读入xml字符串内设置的参数并按照模板写成图纸，最后挂上model这个图纸号，后续所有物理参数都从这里读，不能随便改
 model = mujoco.MjModel.from_xml_string("""
 <mujoco>
   <worldbody> <!--创建一个世界,在这个世界中规定各参数-->
