@@ -15,18 +15,31 @@ model = mujoco.MjModel.from_xml_string("""
     </body> <!--仿真主体构建到这里结束-->
   </worldbody> <!--世界构建到这里结束-->
   <actuator> <!--引入力的概念-->
-  <motor joint="ball_joint" gear=" 0 0 0 0 0 0"/> <!--明确力作用对象是谁,朝那个方向或者绕哪个轴旋转,大小多少(这里是系数，类似矢量数乘)-->
+  <motor joint="ball_joint" gear=" 0 0 1 0 0 0"/> <!--明确力作用对象是谁,朝那个方向或者绕哪个轴旋转,大小多少(这里是系数，类似矢量数乘)-->
   </actuator> <!--有关力的参数设置到这里结束-->
 </mujoco>
 """)
+
+last_print_time = time.time()
+def ball_gravity(m):
+    mg = m*9.81
+    return mg #利用定义一个函数来避免魔法数字，改变质量的同时就可以通过函数计算出重力，不用手动重算。
+
 data = mujoco.MjData(model) # 该操作的本质是MjData是创建仓库（从内存中分出空间存储物理量参数），然后给这个仓库挂上data这个门牌号
-print(len(data.qpos))
-print(model.opt.timestep) #
+
+#print(mujoco.mj_step(model, data)) # 验证该函数无返回值
+print(ball_gravity(model.body_mass[1])) # 看重力大小
+print(len(data.qpos)) # 查看描述小球运动的状态量个数
+print(model.opt.timestep) # 看仿真世界一步用时多长
+print(model.body_mass) # 查看仿真世界存在的各个物体的质量
+print(model.opt.gravity) # 查看底层重力加速度大小及方向
+
+
 with mujoco.viewer.launch_passive(model, data) as viewer: # 拉起仿真窗口，观察运动
     #构建循环体，不断更新和写入数据
       while viewer.is_running():
         
-        data.ctrl[0] = 196.2 #定义控制力并赋与计算好的值 = 20*9.81 改质量必须重算
+        data.ctrl[0] = ball_gravity(model.body_mass[1])
          
         mujoco.mj_step(model, data) #获取实时参数和运动时间，通过公式计算加速度，积分出实时的速度和位移，再次存回data，覆写旧数据，本质是函数，底层涉及指针
          
@@ -34,7 +47,8 @@ with mujoco.viewer.launch_passive(model, data) as viewer: # 拉起仿真窗口�
          
         time.sleep(0.01) #休眠作用，让机器延迟0.01秒再进行计算
         
-        # 打印实时高度，data.qpos数组中包含7个状态量，对应第24行代码，而数组索引从0(X轴坐标)开始，2就对应小球的Z轴坐标
-        #print("当前高度:",data.qpos[2])
-        # 验证该函数无返回值
-        # print(mujoco.mj_step(model, data))
+        if time.time() - last_print_time > 0.5:
+            last_print_time = time.time()
+            # 打印实时高度，data.qpos数组中包含7个状态量，对应第24行代码，而数组索引从0(X轴坐标)开始，2就对应小球的Z轴坐标
+            print("当前高度:",data.qpos[2])
+            print(data.qvel[2]) #打印小球Z坐标
