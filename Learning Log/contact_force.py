@@ -11,24 +11,17 @@ model = mujoco.MjModel.from_xml_string("""
     <geom type="plane" size="5 5 0.1"/> <!--创建一个地面,规定他的长宽高-->
     <body pos="0 0 2"> <!--仿真主体初始位置,对应空间坐标-->
       <joint name="ball_joint" type="free"/> <!--给仿真主体一个名字,方便让力知道施加对象是谁,然后规定它可以进行任何运动-->
-      <geom type="sphere" size="0.2" rgba="0 1 0 1" mass="10"/> <!--把仿真主体定义为小球,然后规定他的尺寸(半径为0.2),接着是颜色和质量(单位:kg)-->
+      <geom type="sphere" size="0.2" rgba="0 1 0 1" mass="20"/> <!--把仿真主体定义为小球,然后规定他的尺寸(半径为0.2),接着是颜色和质量(单位:kg)-->
     </body> <!--仿真主体构建到这里结束-->
   </worldbody> <!--世界构建到这里结束-->
-  <actuator> <!--引入力的概念-->
-  <motor joint="ball_joint" gear=" 0 0 0 0 0 0"/> <!--明确力作用对象是谁,朝那个方向或者绕哪个轴旋转,大小多少(这里是系数，类似矢量数乘)-->
-  </actuator> <!--有关力的参数设置到这里结束-->
 </mujoco>
 """)
 
 last_print_time = time.time()
-def ball_gravity(m):
-    mg = m*9.81
-    return mg #利用定义一个函数来避免魔法数字，改变质量的同时就可以通过函数计算出重力，不用手动重算。
 
 data = mujoco.MjData(model) # 该操作的本质是MjData是创建仓库（从内存中分出空间存储物理量参数），然后给这个仓库挂上data这个门牌号
 
 #print(mujoco.mj_step(model, data)) # 验证该函数无返回值
-print(ball_gravity(model.body_mass[1])) # 看重力大小
 print(len(data.qpos)) # 查看描述小球运动的状态量个数
 print(model.opt.timestep) # 看仿真世界一步用时多长
 print(model.body_mass) # 查看仿真世界存在的各个物体的质量
@@ -40,8 +33,6 @@ force_list = [] # 创建一个空列表，用来存储接触力
 with mujoco.viewer.launch_passive(model, data) as viewer: # 拉起仿真窗口，观察运动
     #构建循环体，不断更新和写入数据
       while viewer.is_running():
-        
-        data.ctrl[0] = ball_gravity(model.body_mass[1])
          
         mujoco.mj_step(model, data) #获取实时参数和运动时间，通过公式计算加速度，积分出实时的速度和位移，再次存回data，覆写旧数据，本质是函数，底层涉及指针
          
@@ -49,12 +40,6 @@ with mujoco.viewer.launch_passive(model, data) as viewer: # 拉起仿真窗口�
          
         time.sleep(0.01) #休眠作用，让机器延迟0.01秒再进行计算
         
-        #if time.time() - last_print_time > 0.5:
-        #    last_print_time = time.time()
-        #    # 打印实时高度，data.qpos数组中包含7个状态量，对应第24行代码，而数组索引从0(X轴坐标)开始，2就对应小球的Z轴坐标
-        #    print("当前高度:",data.qpos[2])
-        #    print("Z轴速度:",data.qvel[2]) #打印小球Z方向的速度大小
-        #    print(data.efc_force)
         if len(data.efc_force) > 0:
             print(f"撞击瞬间!高度：{data.qpos[2]}, Z速度: {data.qvel[2]}, 接触力: {data.efc_force}")
             total_force = sum(data.efc_force)
