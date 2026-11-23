@@ -1,7 +1,7 @@
 import mujoco        # 取用mujoco这个库，类似numpy，有这个才能执行mujoco代码
 import mujoco.viewer # 拉入一个窗口，用来观察仿真主体的运动情况
 import time          # 引入时间概念，模拟现实时间
-
+import matplotlib.pyplot as plt # 引入绘图工具，方便后续画图
 # 以下为XML字符串用于构建仿真的物理模型(MjModel)
 # 加载模型：类似于做图纸，MjModel本质是提供一个图纸模板，from_xml_string是读入xml字符串内设置的参数并按照模板写成图纸，最后挂上model这个图纸号，后续所有物理参数都从这里读，不能随便改
 model = mujoco.MjModel.from_xml_string("""
@@ -11,11 +11,11 @@ model = mujoco.MjModel.from_xml_string("""
     <geom type="plane" size="5 5 0.1"/> <!--创建一个地面,规定他的长宽高-->
     <body pos="0 0 2"> <!--仿真主体初始位置,对应空间坐标-->
       <joint name="ball_joint" type="free"/> <!--给仿真主体一个名字,方便让力知道施加对象是谁,然后规定它可以进行任何运动-->
-      <geom type="sphere" size="0.2" rgba="0 1 0 1" mass="20"/> <!--把仿真主体定义为小球,然后规定他的尺寸(半径为0.2),接着是颜色和质量(单位:kg)-->
+      <geom type="sphere" size="0.2" rgba="0 1 0 1" mass="10"/> <!--把仿真主体定义为小球,然后规定他的尺寸(半径为0.2),接着是颜色和质量(单位:kg)-->
     </body> <!--仿真主体构建到这里结束-->
   </worldbody> <!--世界构建到这里结束-->
   <actuator> <!--引入力的概念-->
-  <motor joint="ball_joint" gear=" 0 0 1 0 0 0"/> <!--明确力作用对象是谁,朝那个方向或者绕哪个轴旋转,大小多少(这里是系数，类似矢量数乘)-->
+  <motor joint="ball_joint" gear=" 0 0 0 0 0 0"/> <!--明确力作用对象是谁,朝那个方向或者绕哪个轴旋转,大小多少(这里是系数，类似矢量数乘)-->
   </actuator> <!--有关力的参数设置到这里结束-->
 </mujoco>
 """)
@@ -34,6 +34,8 @@ print(model.opt.timestep) # 看仿真世界一步用时多长
 print(model.body_mass) # 查看仿真世界存在的各个物体的质量
 print(model.opt.gravity) # 查看底层重力加速度大小及方向
 
+time_list = [] # 创建一个空列表，用来存储时间
+force_list = [] # 创建一个空列表，用来存储接触力
 
 with mujoco.viewer.launch_passive(model, data) as viewer: # 拉起仿真窗口，观察运动
     #构建循环体，不断更新和写入数据
@@ -47,8 +49,19 @@ with mujoco.viewer.launch_passive(model, data) as viewer: # 拉起仿真窗口�
          
         time.sleep(0.01) #休眠作用，让机器延迟0.01秒再进行计算
         
-        if time.time() - last_print_time > 0.5:
-            last_print_time = time.time()
-            # 打印实时高度，data.qpos数组中包含7个状态量，对应第24行代码，而数组索引从0(X轴坐标)开始，2就对应小球的Z轴坐标
-            print("当前高度:",data.qpos[2])
-            print(data.qvel[2]) #打印小球Z坐标
+        #if time.time() - last_print_time > 0.5:
+        #    last_print_time = time.time()
+        #    # 打印实时高度，data.qpos数组中包含7个状态量，对应第24行代码，而数组索引从0(X轴坐标)开始，2就对应小球的Z轴坐标
+        #    print("当前高度:",data.qpos[2])
+        #    print("Z轴速度:",data.qvel[2]) #打印小球Z方向的速度大小
+        #    print(data.efc_force)
+        if len(data.efc_force) > 0:
+            print(f"撞击瞬间!高度：{data.qpos[2]}, Z速度: {data.qvel[2]}, 接触力: {data.efc_force}")
+            total_force = sum(data.efc_force)
+            time_list.append(data.time)
+            force_list.append(total_force)
+plt.plot(time_list, force_list)
+plt.xlabel("Time")
+plt.ylabel("Total Force")
+plt.title("Impact Force vs. Time")
+plt.show()
