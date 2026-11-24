@@ -38,12 +38,12 @@ with mujoco.viewer.launch_passive(model, data) as viewer: # 拉起仿真窗口�
     #构建循环体，不断更新和写入数据
     
     # --- 一次性测量：sleep(0.0016) 实际睡多久，正式跑可删 ---
-    total = 0            # 累计 1000 次真实睡的时间
-    for _ in range(1000):        # 睡 1000 次，摊掉单次的抖动
-        t0 = time.time()         # 睡前记时间戳
-        time.sleep(0.0016)       # 要求睡 1.6 ms
-        total += time.time() - t0   # 实际睡了多久，累加
-    print("sleep 平均实际时长(s):", total / 1000)  # 一次性测量的结果
+#    total = 0            # 累计 1000 次真实睡的时间
+#    for _ in range(1000):        # 睡 1000 次，摊掉单次的抖动
+#        t0 = time.time()         # 睡前记时间戳
+#        time.sleep(0.0016)       # 要求睡 1.6 ms
+#        total += time.time() - t0   # 实际睡了多久，累加
+#    print("sleep 平均实际时长(s):", total / 1000)  # 一次性测量的结果
               
 
     t0 = time.time() # 记录仿真开始时间
@@ -57,7 +57,7 @@ with mujoco.viewer.launch_passive(model, data) as viewer: # 拉起仿真窗口�
          
         time.sleep(0.0016) #休眠 1.6 ms，用来补足一帧（注释原来写 0.01 是错的）
         
-        if time.time() - last_print_time > 0.5:
+        if time.time() - last_print_time > 0.5:# 每隔0.5秒打印一次实时高度和速度，降频打印
             last_print_time = time.time()
             # 打印实时高度，data.qpos数组中包含7个状态量，对应第24行代码，而数组索引从0(X轴坐标)开始，2就对应小球的Z轴坐标
             print("当前高度:",data.qpos[2])
