@@ -15,8 +15,9 @@ model = mujoco.MjModel.from_xml_string("""
     </body> <!--仿真主体构建到这里结束-->
   </worldbody> <!--世界构建到这里结束-->
   <actuator> <!--引入力的概念-->
-  <motor joint="ball_joint" gear=" 0 0 1 0 0 0"/> <!--明确力作用对象是谁,朝那个方向或者绕哪个轴旋转,大小多少(这里是系数，类似矢量数乘)-->
-  <motor joint="ball_joint" gear=" 1 0 0 0 0 0"/>
+  <motor joint="ball_joint" gear=" 1 0 0 0 0 0"/> <!--明确力作用对象是谁,朝那个方向或者绕哪个轴旋转,大小多少(这里是系数，类似矢量数乘)-->
+  <motor joint="ball_joint" gear=" 0 1 0 0 0 0"/>
+  <motor joint="ball_joint" gear=" 0 0 1 0 0 0"/>
   </actuator> <!--有关力的参数设置到这里结束-->
 </mujoco>
 """)
@@ -28,28 +29,24 @@ def ball_gravity(m):
 
 data = mujoco.MjData(model) # 该操作的本质是MjData是创建仓库（从内存中分出空间存储物理量参数），然后给这个仓库挂上data这个门牌号
 
-#print(mujoco.mj_step(model, data)) # 验证该函数无返回值
-print(ball_gravity(model.body_mass[1])) # 看重力大小
-print(len(data.qpos)) # 查看描述小球运动的状态量个数
-print(model.opt.timestep) # 看仿真世界一步用时多长
-print(model.body_mass) # 查看仿真世界存在的各个物体的质量
-print(model.opt.gravity) # 查看底层重力加速度大小及方向
-
 with mujoco.viewer.launch_passive(model, data) as viewer: # 拉起仿真窗口，观察运动
     #构建循环体，不断更新和写入数据
     
     t0 = time.time() # 记录仿真开始时间
     while viewer.is_running():
 
-        data.ctrl[0] = ball_gravity(model.body_mass[1])
-        data.ctrl[1] = 50.0
+        forces = [50.0, 50.0, ball_gravity(model.body_mass[1])] # 列表存储三个力的大小，前两个是恒定的50N，第三个是小球重力大小
+
+        for i in range(3): # 通过for循环给三个力赋值
+            data.ctrl[i] = forces[i] # 通过data.ctrl数组拉取列表中的值给三个力赋值，注意这里是直接赋值，不是累加
+
         mujoco.mj_step(model, data) #获取实时参数和运动时间，通过公式计算加速度，积分出实时的速度和位移，再次存回data，覆写旧数据，本质是函数，底层涉及指针
          
         viewer.sync() #将data里物理量表现出来的物理现象实时绘画出来
          
         time.sleep(0.0016) #休眠 1.6 ms，用来补足一帧（注释原来写 0.01 是错的）
         
-        if time.time() - last_print_time > 0.01:# 每隔0.01秒打印一次实时高度和速度，降频打印，但要避免错过打印窗口
+        if time.time() - last_print_time > 0.01: # 每隔0.01秒打印一次实时高度和速度，降频打印，但要避免错过打印窗口
             last_print_time = time.time()
             # 打印实时高度，data.qpos数组中包含7个状态量，对应第24行代码，而数组索引从0(X轴坐标)开始，2就对应小球的Z轴坐标
             print("当前高度:",data.qpos[2])

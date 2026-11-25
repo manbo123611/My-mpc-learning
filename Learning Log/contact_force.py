@@ -21,12 +21,6 @@ last_print_time = time.time()
 
 data = mujoco.MjData(model) # 该操作的本质是MjData是创建仓库（从内存中分出空间存储物理量参数），然后给这个仓库挂上data这个门牌号
 
-#print(mujoco.mj_step(model, data)) # 验证该函数无返回值
-print(len(data.qpos)) # 查看描述小球运动的状态量个数
-print(model.opt.timestep) # 看仿真世界一步用时多长
-print(model.body_mass) # 查看仿真世界存在的各个物体的质量
-print(model.opt.gravity) # 查看底层重力加速度大小及方向
-
 time_list = [] # 创建一个空列表，用来存储时间
 force_list = [] # 创建一个空列表，用来存储接触力
 
